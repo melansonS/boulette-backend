@@ -44,12 +44,13 @@ const joinRoom = (roomId, user) => {
 const leaveRoom = (roomId, userId) => {
   const room = rooms.find((room) => room.id === roomId);
   if (room) {
-    const index = room.users.find((user) => user.id === userId);
-    if (index) {
-      room.users.splice(index, 1);
+    const uIndex = room.users.indexOf((user) => user.id === userId);
+    if (uIndex) {
+      room.users.splice(uIndex, 1);
     }
     if (room.users.length === 0) {
-      rooms.splice(room, 1);
+      const rIndex = rooms.indexOf((room) => room.id === roomId);
+      rooms.splice(rIndex, 1);
     }
   }
 };
@@ -65,7 +66,7 @@ const addPrompt = (roomId, prompt) => {
 const deletePrompt = (roomId, id) => {
   const room = rooms.find((room) => room.id === roomId);
   const index = room.prompts.findIndex((prompt) => prompt.id === id);
-  if (index !== -1) {
+  if (index) {
     room.prompts.splice(index, 1);
   }
 };

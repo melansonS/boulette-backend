@@ -16,9 +16,9 @@ const {
 
 const app = express();
 var corsOptions = {
-  origin: "*",
+  origin: "http://localhost:3000",
   optionsSuccessStatus: 200, // For legacy browser support
-  methods: "GET, PUT",
+  methods: "GET",
 };
 
 app.use(cors(corsOptions));
@@ -45,19 +45,16 @@ io.on("connection", (socket) => {
 
   socket.on("createRoom", ({ roomId, name }, callback) => {
     let id = roomId;
-    console.log("roomid", roomId);
     if (rooms.find((room) => room.id === roomId)) {
       id += "e";
     }
-    const user = userJoin(name, id, socket.id);
-    socket.join(user.room);
+    // const user = userJoin(name, id, socket.id);
+    socket.join(roomId);
     createRoom(id);
     callback({ status: "ok", id });
   });
 
   socket.on("joinRoom", ({ roomId, name }, callback) => {
-    console.log({ name, roomId });
-    console.log(rooms);
     if (!rooms.find((room) => room.id === roomId)) {
       callback({
         status: "room not found",
@@ -103,7 +100,9 @@ io.on("connection", (socket) => {
       if (room) {
         leaveRoom(room.id, socket.id, socket);
         io.to(user.room).emit("roomUsers", room.users);
+        console.log("someone left", room.users);
       }
+      userLeave(socket.id);
     }
     clearInterval(interval);
   });
