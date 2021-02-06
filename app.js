@@ -12,6 +12,10 @@ const {
   addPrompt,
   getAllPrompts,
   deletePrompt,
+  startRound,
+  stopRound,
+  startTimer,
+  stopTimer,
 } = require("./utils/rooms");
 
 const app = express();
@@ -42,13 +46,12 @@ io.on("connection", (socket) => {
     clearInterval(interval);
   }
   interval = setInterval(() => getApiAndEmit(socket), 1000);
-
-  socket.on("createRoom", ({ roomId, name }, callback) => {
+  //ROOM
+  socket.on("createRoom", ({ roomId }, callback) => {
     let id = roomId;
     if (rooms.find((room) => room.id === roomId)) {
       id += "e";
     }
-    // const user = userJoin(name, id, socket.id);
     socket.join(roomId);
     createRoom(id);
     callback({ status: "ok", id });
@@ -69,29 +72,53 @@ io.on("connection", (socket) => {
       if (room) {
         io.to(roomId).emit("roomUsers", room.users);
         socket.emit("allPrompts", getAllPrompts(roomId));
-        console.log("users!? ", room.users);
+        if (room.roundInProgress) {
+          socket.emit("roundStart", room.currentPlayer);
+        }
       }
     }
   });
 
   socket.on("leaveRoom", ({ roomId }) => {
-    leaveRoom(roomId, socket.id, socket);
+    leaveRoom(roomId, socket.id);
     const room = rooms.find((room) => room.id === roomId);
+    const user = users.find((user) => user.id === socket.id);
     if (room) {
       io.to(roomId).emit("roomUsers", room.users);
       console.log("someone left", room.users);
+      if (room.roundInProgress && room.currentPlayer === user.username) {
+        stopRound(user.room);
+        io.to(user.room).emit("roundStop");
+      }
     }
   });
 
+  //START GAME
+  socket.on("startRound", ({ roomId, name }) => {
+    startRound(roomId, name);
+    startTimer(roomId, 5, socket, io);
+    io.to(roomId).emit("roundStart", name);
+    socket.emit("currentlyPlaying");
+  });
+
+  socket.on("stopRound", ({ roomId }) => {
+    stopRound(roomId);
+    stopTimer(roomId, io);
+    io.to(roomId).emit("roundStop");
+    console.log("Stoping round :D");
+  });
+
+  //PROMPTS
   socket.on("addPrompt", ({ roomId, prompt }) => {
     addPrompt(roomId, prompt);
     io.to(roomId).emit("allPrompts", getAllPrompts(roomId));
   });
+
   socket.on("deletePrompt", ({ roomId, promptId }) => {
     deletePrompt(roomId, promptId);
     io.to(roomId).emit("allPrompts", getAllPrompts(roomId));
   });
-
+  //DISCONECT
   socket.on("disconnect", () => {
     console.log("Client disconnected");
     const user = users.find((user) => user.id === socket.id);
@@ -99,6 +126,10 @@ io.on("connection", (socket) => {
       const room = rooms.find((room) => room.id === user.room);
       if (room) {
         leaveRoom(room.id, socket.id, socket);
+        if (room.roundInProgress && room.currentPlayer === user.username) {
+          stopRound(user.room);
+          io.to(user.room).emit("roundStop");
+        }
         io.to(user.room).emit("roomUsers", room.users);
         console.log("someone left", room.users);
       }

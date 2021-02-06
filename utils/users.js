@@ -7,8 +7,8 @@ const userJoin = (username, roomId, id) => {
 };
 
 const userLeave = (id) => {
-  const index = users.indexOf((user) => user.id === id);
-  if (index) {
+  const index = users.findIndex((user) => user.id === id);
+  if (index !== -1) {
     users.splice(index, 1);
   }
 };

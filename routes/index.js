@@ -7,9 +7,7 @@ router.get("/", (req, res) => {
 });
 
 router.get("/check-rooms", (req, res) => {
-  console.log(req.query);
   const room = rooms.find((room) => room.id === req.query.id);
-  console.log(room);
   if (room) {
     res.json({ notFound: false });
     return;
