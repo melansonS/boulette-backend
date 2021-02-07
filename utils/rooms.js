@@ -13,7 +13,7 @@ const rooms = [
         members: [],
       },
     },
-    prompts: [],
+    prompts: [{ id: "pppp", text: "test Prompt", drawn: false }],
     roundInProgress: false,
     currentPlayer: "",
     timer: 60,
@@ -63,7 +63,7 @@ const leaveRoom = (roomId, userId) => {
       const team = isRed !== -1 ? "redTeam" : "blueTeam";
       leaveTeam(room, userId, team);
     }
-    if (room.users.length === 0) {
+    if (room.users && room.users.length === 0) {
       const rIndex = rooms.findIndex((room) => room.id === roomId);
       rooms.splice(rIndex, 1);
     }
@@ -83,13 +83,18 @@ const leaveTeam = (room, userId, team) => {
   }
 };
 
-const changeTeam = (room, user, team) => {};
+const changeTeam = (room, userId, team) => {
+  const user = room.users.find((user) => user.id === userId);
+  const isRed = team === "redTeam";
+  joinTeam(room, user, isRed ? "blueTeam" : "redTeam");
+  leaveTeam(room, userId, isRed ? "redTeam" : "blueTeam");
+};
 
 const addPrompt = (roomId, prompt) => {
   const room = rooms.find((room) => room.id === roomId);
   if (room) {
     const id = nanoid();
-    room.prompts.push({ id, text: prompt, drawn: false, skipped: false });
+    room.prompts.push({ id, text: prompt, drawn: false });
   }
 };
 
@@ -108,13 +113,29 @@ const getAllPrompts = (roomId) => {
   }
 };
 
-const getAllUsers = (room) => {
-  return room.users;
+const drawPrompt = (roomId, promptId, team) => {
+  const room = rooms.find((room) => room.id === roomId);
+  if (room && room.teams && room.prompts) {
+    room.prompts = room.prompts.map((p) =>
+      p.id === promptId ? { ...p, drawn: true } : p
+    );
+    room.teams[team].points += 1;
+    return { prompts: room.prompts, teams: room.teams };
+  }
+};
+const resetPrompts = (roomId) => {
+  const room = rooms.find((room) => room.id === roomId);
+  room.prompts = room.prompts.map((p) => {
+    if (p.drawn) {
+      p.drawn = false;
+    }
+    return p;
+  });
 };
 
 const startRound = (roomId, name) => {
   const room = rooms.find((room) => room.id === roomId);
-  if (!room.roundInProgress) {
+  if (room && !room.roundInProgress) {
     room.roundInProgress = true;
     room.currentPlayer = name;
   }
@@ -122,7 +143,7 @@ const startRound = (roomId, name) => {
 
 const stopRound = (roomId) => {
   const room = rooms.find((room) => room.id === roomId);
-  if (room.roundInProgress) {
+  if (room && room.roundInProgress) {
     room.roundInProgress = false;
     room.currentPlayer = "";
   }
@@ -131,23 +152,33 @@ const stopRound = (roomId) => {
 const startTimer = (roomId, time = 60, socket, io) => {
   const newTime = new Date().getTime() + time * 1000;
   const room = rooms.find((room) => room.id === roomId);
-  if (room.interval) {
-    clearInterval(room.interval);
+  if (room) {
+    if (room.interval) {
+      clearInterval(room.interval);
+    }
+    room.interval = setInterval(
+      () => emitRoomTimer(roomId, newTime, socket, io),
+      1000
+    );
   }
-  room.interval = setInterval(
-    () => emitRoomTimer(roomId, newTime, socket, io),
-    1000
-  );
 };
 
 const stopTimer = (roomId, io) => {
   const room = rooms.find((room) => room.id === roomId);
-  if (room.interval) {
+  if (room && room.interval) {
     clearInterval(room.interval);
     stopRound(roomId);
     io.to(roomId).emit("roundStop");
     io.to(roomId).emit("stopTimer");
   }
+};
+
+const resetGame = (roomId) => {
+  const room = rooms.find((room) => room.id === roomId);
+  room.prompts = [];
+  room.teams.redTeam.points = 0;
+  room.teams.blueTeam.points = 0;
+  return { prompts: room.prompts, teams: room.teams };
 };
 
 const emitRoomTimer = (roomId, newTime, socket, io) => {
@@ -167,11 +198,14 @@ module.exports = {
   createRoom,
   deletePrompt,
   getAllPrompts,
-  getAllUsers,
   joinRoom,
   leaveRoom,
   startRound,
+  resetGame,
   stopRound,
   startTimer,
   stopTimer,
+  changeTeam,
+  drawPrompt,
+  resetPrompts,
 };

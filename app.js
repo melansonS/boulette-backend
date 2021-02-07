@@ -8,14 +8,17 @@ const {
   createRoom,
   joinRoom,
   leaveRoom,
-  getAllUsers,
   addPrompt,
   getAllPrompts,
   deletePrompt,
   startRound,
   stopRound,
+  resetGame,
   startTimer,
   stopTimer,
+  changeTeam,
+  drawPrompt,
+  resetPrompts,
 } = require("./utils/rooms");
 
 const app = express();
@@ -57,12 +60,10 @@ io.on("connection", (socket) => {
     callback({ status: "ok", id });
   });
 
-  socket.on("joinRoom", ({ roomId, name }, callback) => {
+  socket.on("joinRoom", ({ roomId, name }) => {
     console.log(" room ", roomId);
     if (!rooms.find((room) => room.id === roomId)) {
-      callback({
-        status: "room not found",
-      });
+      socket.emit("notFound");
       return;
     } else {
       socket.join(roomId);
@@ -94,11 +95,17 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("changeTeam", ({ roomId, team }) => {
+    const room = rooms.find((room) => room.id === roomId);
+    changeTeam(room, socket.id, team);
+    io.to(roomId).emit("roomUsers", room.teams);
+  });
+
   //START GAME
-  socket.on("startRound", ({ roomId, name }) => {
+  socket.on("startRound", ({ roomId, name, team }) => {
     startRound(roomId, name);
     startTimer(roomId, 5, socket, io);
-    io.to(roomId).emit("roundStart", name);
+    io.to(roomId).emit("roundStart", { username: name, team });
     socket.emit("currentlyPlaying");
   });
 
@@ -109,6 +116,14 @@ io.on("connection", (socket) => {
     console.log("Stoping round :D");
   });
 
+  socket.on("resetGame", ({ roomId }) => {
+    const results = resetGame(roomId);
+    io.to(roomId).emit("gameReset", {
+      prompts: results.prompts,
+      teams: results.teams,
+    });
+  });
+
   //PROMPTS
   socket.on("addPrompt", ({ roomId, prompt }) => {
     addPrompt(roomId, prompt);
@@ -117,6 +132,19 @@ io.on("connection", (socket) => {
 
   socket.on("deletePrompt", ({ roomId, promptId }) => {
     deletePrompt(roomId, promptId);
+    io.to(roomId).emit("allPrompts", getAllPrompts(roomId));
+  });
+
+  socket.on("drawPrompt", ({ roomId, promptId, team }) => {
+    const results = drawPrompt(roomId, promptId, team);
+    io.to(roomId).emit("promptDrawn", {
+      teams: results.teams,
+      prompts: results.prompts,
+    });
+  });
+
+  socket.on("resetPrompts", ({ roomId }) => {
+    resetPrompts(roomId);
     io.to(roomId).emit("allPrompts", getAllPrompts(roomId));
   });
   //DISCONECT
