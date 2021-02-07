@@ -58,6 +58,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("joinRoom", ({ roomId, name }, callback) => {
+    console.log(" room ", roomId);
     if (!rooms.find((room) => room.id === roomId)) {
       callback({
         status: "room not found",
@@ -70,7 +71,7 @@ io.on("connection", (socket) => {
       const room = rooms.find((room) => room.id === roomId);
       joinRoom(roomId, user, socket);
       if (room) {
-        io.to(roomId).emit("roomUsers", room.users);
+        io.to(roomId).emit("roomUsers", room.teams);
         socket.emit("allPrompts", getAllPrompts(roomId));
         if (room.roundInProgress) {
           socket.emit("roundStart", room.currentPlayer);
@@ -84,7 +85,7 @@ io.on("connection", (socket) => {
     const room = rooms.find((room) => room.id === roomId);
     const user = users.find((user) => user.id === socket.id);
     if (room) {
-      io.to(roomId).emit("roomUsers", room.users);
+      io.to(roomId).emit("roomUsers", room.teams);
       console.log("someone left", room.users);
       if (room.roundInProgress && room.currentPlayer === user.username) {
         stopRound(user.room);
@@ -130,7 +131,7 @@ io.on("connection", (socket) => {
           stopRound(user.room);
           io.to(user.room).emit("roundStop");
         }
-        io.to(user.room).emit("roomUsers", room.users);
+        io.to(user.room).emit("roomUsers", room.teams);
         console.log("someone left", room.users);
       }
       userLeave(socket.id);

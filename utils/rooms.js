@@ -3,13 +3,15 @@ const rooms = [
   {
     id: "test",
     users: [{ username: "tom", id: "22", room: "test" }],
-    redTeam: {
-      points: 0,
-      members: [],
-    },
-    blueTeam: {
-      points: 0,
-      members: [],
+    teams: {
+      redTeam: {
+        points: 0,
+        members: [{ username: "tom", id: "22", room: "test" }],
+      },
+      blueTeam: {
+        points: 0,
+        members: [],
+      },
     },
     prompts: [],
     roundInProgress: false,
@@ -23,13 +25,15 @@ const createRoom = (id) => {
   const room = {
     id,
     users: [],
-    redTeam: {
-      points: 0,
-      members: [],
-    },
-    blueTeam: {
-      points: 0,
-      members: [],
+    teams: {
+      redTeam: {
+        points: 0,
+        members: [],
+      },
+      blueTeam: {
+        points: 0,
+        members: [],
+      },
     },
     prompts: [],
     roundInProgress: false,
@@ -40,6 +44,11 @@ const createRoom = (id) => {
 const joinRoom = (roomId, user) => {
   const room = rooms.find((room) => room.id === roomId);
   room.users.push(user);
+  const team =
+    room.teams.redTeam.members.length <= room.teams.blueTeam.members.length
+      ? "redTeam"
+      : "blueTeam";
+  joinTeam(room, user, team);
 };
 
 const leaveRoom = (roomId, userId) => {
@@ -48,6 +57,11 @@ const leaveRoom = (roomId, userId) => {
     const uIndex = room.users.findIndex((user) => user.id === userId);
     if (uIndex !== -1) {
       room.users.splice(uIndex, 1);
+      const isRed = room.teams.redTeam.members.findIndex(
+        (member) => member.id === userId
+      );
+      const team = isRed !== -1 ? "redTeam" : "blueTeam";
+      leaveTeam(room, userId, team);
     }
     if (room.users.length === 0) {
       const rIndex = rooms.findIndex((room) => room.id === roomId);
@@ -55,6 +69,21 @@ const leaveRoom = (roomId, userId) => {
     }
   }
 };
+
+const joinTeam = (room, user, team) => {
+  room.teams[team].members.push(user);
+};
+
+const leaveTeam = (room, userId, team) => {
+  const uIndex = room.teams[team].members.findIndex(
+    (member) => member.id === userId
+  );
+  if (uIndex !== -1) {
+    room.teams[team].members.splice(uIndex, 1);
+  }
+};
+
+const changeTeam = (room, user, team) => {};
 
 const addPrompt = (roomId, prompt) => {
   const room = rooms.find((room) => room.id === roomId);
