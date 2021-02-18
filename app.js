@@ -104,7 +104,7 @@ io.on("connection", (socket) => {
   //START GAME
   socket.on("startRound", ({ roomId, name, team }) => {
     startRound(roomId, name);
-    startTimer(roomId, 5, socket, io);
+    startTimer(roomId, 120, socket, io);
     io.to(roomId).emit("roundStart", { username: name, team });
     socket.emit("currentlyPlaying");
   });
