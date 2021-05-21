@@ -125,12 +125,14 @@ const drawPrompt = (roomId, promptId, team) => {
 };
 const resetPrompts = (roomId) => {
   const room = rooms.find((room) => room.id === roomId);
-  room.prompts = room.prompts.map((p) => {
-    if (p.drawn) {
-      p.drawn = false;
-    }
-    return p;
-  });
+  if (room && room.prompts) {
+    room.prompts = room.prompts.map((p) => {
+      if (p.drawn) {
+        p.drawn = false;
+      }
+      return p;
+    });
+  }
 };
 
 const startRound = (roomId, name) => {
@@ -174,6 +176,7 @@ const stopTimer = (roomId, io) => {
 };
 
 const resetGame = (roomId) => {
+  console.log("in RESET GAME");
   const room = rooms.find((room) => room.id === roomId);
   room.prompts = [];
   room.teams.redTeam.points = 0;

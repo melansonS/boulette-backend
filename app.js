@@ -144,9 +144,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("resetPrompts", ({ roomId }) => {
+    console.log("reseting Prompts :D", roomId);
     resetPrompts(roomId);
     io.to(roomId).emit("allPrompts", getAllPrompts(roomId));
   });
+
   //DISCONECT
   socket.on("disconnect", () => {
     console.log("Client disconnected");
