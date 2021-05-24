@@ -73,7 +73,7 @@ io.on("connection", (socket) => {
       joinRoom(roomId, user, socket);
       if (room) {
         io.to(roomId).emit("roomUsers", room.teams);
-        socket.emit("allPrompts", getAllPrompts(roomId));
+        socket.emit("allPrompts", { prompts: getAllPrompts(roomId) });
         if (room.roundInProgress) {
           socket.emit("roundStart", room.currentPlayer);
         }
@@ -127,12 +127,12 @@ io.on("connection", (socket) => {
   //PROMPTS
   socket.on("addPrompt", ({ roomId, prompt }) => {
     addPrompt(roomId, prompt);
-    io.to(roomId).emit("allPrompts", getAllPrompts(roomId));
+    io.to(roomId).emit("allPrompts", { prompts: getAllPrompts(roomId) });
   });
 
   socket.on("deletePrompt", ({ roomId, promptId }) => {
     deletePrompt(roomId, promptId);
-    io.to(roomId).emit("allPrompts", getAllPrompts(roomId));
+    io.to(roomId).emit("allPrompts", { prompts: getAllPrompts(roomId) });
   });
 
   socket.on("drawPrompt", ({ roomId, promptId, team }) => {
@@ -143,10 +143,13 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("resetPrompts", ({ roomId }) => {
-    console.log("reseting Prompts :D", roomId);
+  socket.on("resetPrompts", ({ roomId, roundCompleteReset }) => {
+    console.log("reseting Prompts :D", roomId, { roundCompleteReset });
     resetPrompts(roomId);
-    io.to(roomId).emit("allPrompts", getAllPrompts(roomId));
+    io.to(roomId).emit("allPrompts", {
+      prompts: getAllPrompts(roomId),
+      roundCompleteReset,
+    });
   });
 
   //DISCONECT
