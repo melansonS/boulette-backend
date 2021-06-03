@@ -23,7 +23,8 @@ const {
 
 const app = express();
 var corsOptions = {
-  origin: "http://localhost:3000",
+  // origin: "http://localhost:3000",
+  origin: "https://boulette-melansons.vercel.app/",
   optionsSuccessStatus: 200, // For legacy browser support
   methods: "GET",
 };
