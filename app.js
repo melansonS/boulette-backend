@@ -76,7 +76,10 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("roomUsers", room.teams);
         socket.emit("allPrompts", { prompts: getAllPrompts(roomId) });
         if (room.roundInProgress) {
-          socket.emit("roundStart", room.currentPlayer);
+          socket.emit("roundStart", {
+            username: room.currentPlayer,
+            team: room.currentTeam,
+          });
         }
       }
     }
@@ -104,7 +107,7 @@ io.on("connection", (socket) => {
 
   //START GAME
   socket.on("startRound", ({ roomId, name, team }) => {
-    startRound(roomId, name);
+    startRound(roomId, name, team);
     startTimer(roomId, 120, socket, io);
     io.to(roomId).emit("roundStart", { username: name, team });
     socket.emit("currentlyPlaying");

@@ -16,6 +16,7 @@ const rooms = [
     prompts: [{ id: "pppp", text: "test Prompt", drawn: false }],
     roundInProgress: false,
     currentPlayer: "",
+    currentTeam: "",
     timer: 60,
     interval: null,
   },
@@ -135,11 +136,12 @@ const resetPrompts = (roomId) => {
   }
 };
 
-const startRound = (roomId, name) => {
+const startRound = (roomId, name, team) => {
   const room = rooms.find((room) => room.id === roomId);
   if (room && !room.roundInProgress) {
     room.roundInProgress = true;
     room.currentPlayer = name;
+    room.currentTeam = team;
   }
 };
 
